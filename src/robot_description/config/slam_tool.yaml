@@ -1,0 +1,46 @@
+slam_toolbox:
+  ros__parameters:
+    use_sim_time: true
+    base_frame: base_link
+    odom_frame: odom
+    map_frame: map
+    mode: mapping
+    minimum_range: 0.1
+    minimum_range: 10.0
+    scan_topic: /scan
+    transform_publish_period: 0.1
+    tf_buffer_duration: 30.0
+    publish_tf: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      yaw: 0.0
+    # Solver parameters
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+    
+    # Scan matching
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.08  # Increase if map updates too frequently
+    minimum_travel_heading: 0.05   # Require more rotation before updating
+    scan_buffer_size: 25
+    scan_buffer_maximum_scan_distance: 15.0
+    
+    # Correlation parameters - CRITICAL FOR ROTATION
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+    
+    # Loop closure
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true
+    loop_match_minimum_chain_size: 10
+    
+    # Speed settings - slow down for better accuracy
+    max_laser_range: 20.0  # Adjust to your LiDAR specs
+    minimum_time_interval: 0.5  # Slow down mapping

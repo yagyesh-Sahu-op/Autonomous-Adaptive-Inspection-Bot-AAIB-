@@ -10,7 +10,8 @@ def generate_launch_description():
     slam_dir = get_package_share_directory('slam_toolbox')
 
     params_file = os.path.expanduser(
-        '~/web_robot_ws/src/robot_description/config/nav2/nav2_params.yaml'
+        # '~/web_robot_ws/src/robot_description/config/slam_tool.yaml'
+        '~/web_robot_ws/src/robot_description/config/nav2_params.yaml'
     )
 
     slam_launch = IncludeLaunchDescription(
@@ -30,12 +31,19 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': 'true',
             'wait_for_map': 'true',
-            'params_file': params_file
+            'map': os.path.expanduser('~/web_robot_ws/src/robot_description/map/new_map.yaml'),
+            'params_file': params_file,
+            'remappings': {
+                '/cmd_vel': '/cmd_vel_nav',
+               
+                '/odom': '/odometry/filtered'
+            }
+            
         }.items()
     )
 
     return LaunchDescription([
-        slam_launch,
+        # slam_launch,
         nav2_launch
         
     ])

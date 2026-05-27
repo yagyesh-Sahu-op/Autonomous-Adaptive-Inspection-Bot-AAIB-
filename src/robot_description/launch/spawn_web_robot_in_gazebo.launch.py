@@ -13,9 +13,12 @@ def generate_launch_description():
     pkg_share_dir = get_package_share_directory('robot_description')
     gazebo_ros_share_dir = get_package_share_directory('gazebo_ros')
     world_path = os.path.expanduser(
-        # '~/web_robot_ws/worlds/oil_factory.world'
-        '~/web_robot_ws/worlds/gazebo_models_worlds_collection/worlds/powerplant.world'
+        '~/web_robot_ws/worlds/campus_navigation.world'
+        # '~/web_robot_ws/worlds/gazebo_models_worlds_collection/worlds/test_zone.world'
+        # '~/web_robot_ws/src/robot_description/worlds/new.world'
     )
+    # world_path = os.path.join(pkg_share_dir, 'worlds', 'new.world')
+
     # Path to URDF
     urdf_file_name = 'web_robot.urdf.xacro'
     default_model_path = os.path.join(pkg_share_dir, 'urdf', urdf_file_name)
@@ -131,6 +134,8 @@ def generate_launch_description():
         name='ekf_filter_node',
         output='screen',
         parameters=[os.path.join(pkg_share_dir, 'config/ekf.yaml'), {'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        # remappings=[
+        #     ('/odometry/filtered', '/odom')]
     )
     rviz_node = Node(
         package='rviz2',
@@ -142,11 +147,26 @@ def generate_launch_description():
     )
     twist_mux = Node(
         package='twist_mux',
-            executable='twist_mux',
-            name='twist_mux',
-            parameters=[os.path.join(pkg_share_dir,'config/twist_mux.yaml')],
-            output='screen'
+        executable='twist_mux',
+        name='twist_mux',
+        parameters=[os.path.join(pkg_share_dir,'config/twist_mux.yaml')],
+        output='screen',
+        arguments=['--ros-args'],
+        remappings=[
+            ('/cmd_vel_out', '/diff_drive_controller/cmd_vel_unstamped')
+        ]
+            
     )
+    camera_feed= Node(
+        package='web_video_server',
+        executable='web_video_server',
+        name='web_video_server',
+        parameters=[{
+            'port': 8080,
+            'address': '0.0.0.0', # Allows external devices to see the stream
+            'default_stream_type': 'mjpeg'
+        }]
+    )       
     pointcloud_to_laserscan_node = Node(
         package='pointcloud_to_laserscan',
         executable='pointcloud_to_laserscan_node',
@@ -155,8 +175,8 @@ def generate_launch_description():
 
         # Topic remappings
         remappings=[
-            ('cloud_in', '/scan'),
-            ('scan', '/scan_laser'),
+            ('cloud_in', '/scan_laser'),
+            
         ],
 
         # Parameters
@@ -169,8 +189,19 @@ def generate_launch_description():
             'angle_increment': 0.01,
             'range_min': 0.1,
             'range_max': 10.0,
+            'use_inf': True,
+            'qos_overrides./scan.publisher.reliability': 'reliable',  # ← ADD THI
         }]
     )
+    relay = Node(
+        package='topic_tools',
+        executable='relay',
+        name='scan_relay',
+        parameters=[{
+            'input_topic': '/scan',
+            'output_topic': '/scan_reliable',
+        }],
+    ),
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -197,7 +228,9 @@ def generate_launch_description():
         robot_localization_node,
         pointcloud_to_laserscan_node,
         twist_mux,
-        slam_launch
+        relay,
+        # slam_launch,
+        camera_feed
         # rviz_node
        
     ])

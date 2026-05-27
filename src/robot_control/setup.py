@@ -21,6 +21,9 @@ setup(
     entry_points={
             'console_scripts': [
                 'robot_cmd_publisher = robot_control.robot_cmd_publisher:main', # This line
+                'robot_calibration = robot_control.robot_calibration:main', # This line
+                 'robot = robot_control.robotControlNode:main', # This line
+                 'rotate_robot = robot_control.rotate:main' # This line
             ],
     },
 )

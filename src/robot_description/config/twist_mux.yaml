@@ -1,14 +1,21 @@
 twist_mux:
   ros__parameters:
+
+    cmd_vel_out: /diff_drive_controller/cmd_vel_unstamped
+
     topics:
-      nav2:
+      nav2_f:
         topic  : /cmd_vel
         timeout: 0.5
-        priority: 10
+        priority: 110
+      nav2:
+        topic  : /cmd_vel_nav
+        timeout: 0.5
+        priority: 118
       teleop:
         topic: /cmd_vel_teleop
         timeout: 0.5
-        priority: 100
+        priority: 150
 
     locks:
       emergency_stop:

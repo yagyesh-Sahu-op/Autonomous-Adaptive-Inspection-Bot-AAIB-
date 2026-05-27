@@ -1,11 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>web_interface_server</name>
+  <name>calibration_tools</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="yagyesh.sahu.993@gmail.com">yagyesh</maintainer>
-  <license>MIT</license>
+  <maintainer email="yagyesh@todo.todo">yagyesh</maintainer>
+  <license>TODO: License declaration</license>
+
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_srvs</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

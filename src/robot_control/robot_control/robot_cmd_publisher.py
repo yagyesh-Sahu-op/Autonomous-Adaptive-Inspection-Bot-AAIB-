@@ -51,7 +51,7 @@ class RobotCmdPublisher(Node):
             while rclpy.ok():
                 key = self.get_key()
                 if key == 'w':
-                    self.linear_speed = 0.2 # Move forward at 0.5 m/s
+                    self.linear_speed = 0.5 # Move forward at 0.5 m/s
                     self.angular_speed = 0.0
                     self.get_logger().info('Moving forward!') # Added log
                 elif key == 's':
@@ -60,11 +60,11 @@ class RobotCmdPublisher(Node):
                     self.get_logger().info('Moving backward!') # Added log
                 elif key == 'a':
                     self.linear_speed = 0.0
-                    self.angular_speed = 2.0 # Turn left at 0.5 rad/s
+                    self.angular_speed = 0.4 # Turn left at 0.5 rad/s
                     self.get_logger().info('Turning left!') # Added log
                 elif key == 'd':
                     self.linear_speed = 0.0
-                    self.angular_speed = -2.0 # Turn right at 0.5 rad/s
+                    self.angular_speed = -0.4 # Turn right at 0.5 rad/s
                     self.get_logger().info('Turning right!') # Added log
                 elif key == ' ': # Spacebar to stop
                     self.linear_speed = 0.0

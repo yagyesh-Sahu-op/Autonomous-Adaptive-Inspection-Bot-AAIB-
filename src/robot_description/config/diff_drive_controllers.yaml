@@ -1,44 +1,121 @@
 controller_manager:
   ros__parameters:
-    update_rate: 30 # Hz
-    use_sim_time: true 
-    
+    update_rate: 100  # Hz
+    use_sim_time: true
+
     diff_drive_controller:
       type: diff_drive_controller/DiffDriveController
+
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
 diff_drive_controller:
   ros__parameters:
-        publish_wheel_tf: true
-        left_wheel_names: ['front_left_wheel_joint', 'back_left_wheel_joint']
-        right_wheel_names: ['front_right_wheel_joint', 'back_right_wheel_joint']
-        wheel_separation: 0.202
-        wheel_radius: 0.054
-        publish_cmd_vel: true
-        publish_rate: 50.0
+    # ============================================================
+    # CALCULATED WHEEL PARAMETERS
+    # ============================================================
+    # Wheel radius calculated from URDF inertia values:
+    #   Formula: r = sqrt(2 × Izz / mass)
+    #   Izz = 0.000125 kg⋅m², mass = 0.25 kg
+    #   Result: r = 0.0316 m (rounded to 0.033 m)
+    #
+    # Wheel separation calculated from URDF wheel positions:
+    #   Left wheels: y = 0.1 m
+    #   Right wheels: y = -0.102 m  
+    #   Separation = 0.1 - (-0.102) = 0.202 m
+    # ============================================================
+    publish_wheel_tf: true
+    # 4-wheel differential drive configuration
+    left_wheel_names: ["back_left_wheel_joint","front_left_wheel_joint" ]
+    right_wheel_names: ["front_right_wheel_joint", "back_right_wheel_joint"]
 
-        odom_frame_id: 'odom'
-        use_stamped_vel: false
-        cmd_vel_timeout: 0.25
-        base_frame_id: base_link
-        publish_odom: true
-        publish_tf: true  
-        publish_odom_tf: true
-        enable_odom_tf: true
-        open_loop: false
-        pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
-        twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
-        linear:
-          x:
-            has_velocity_limits: true
-            max_velocity: 1.0
-            has_acceleration_limits: true
-            max_acceleration: 1.0
-        angular:
-          z:
-            has_velocity_limits: true
-            max_velocity: 2.5
-            has_acceleration_limits: true
-            max_acceleration: 2.5
+    # CRITICAL PARAMETERS FOR ODOMETRY ACCURACY
+    wheel_separation: 0.215    # meters (20.2 cm between wheel centers)(0.47)
+    wheel_radius: 0.054     # meters (5.4 cm, calculated from URDF inertia, 0.000125 kg⋅m² / 0.25 kg)
+    # Alternative rounded value (slightly less accurate but common):
+    # wheel_radius: 0.033        # meters (3.3 cm, 4.4% error)
 
+    # Fine-tuning multipliers (adjust theseduring calibration testing)
+    wheel_separation_multiplier: 1.0
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: 1.0
+
+    # Frame IDs
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    use_stamped_vel: false
+    # Odometry covariance (tune based on your robot's accuracy)
+    # [x, y, z, rotation about X, rotation about Y, rotation about Z]
+    # pose_covariance_diagonal: [0.02, 0.02, 99999.0, 99999.0, 99999.0, 0.05]
+    # twist_covariance_diagonal:[0.02, 0.02, 99999.0, 99999.0, 99999.0, 0.05 ]
+    # Publishing settings
+    publish_cmd_vel: true
+    publish_rate: 100.0                    # Hz - odometry publishing rate
+    publish_limited_velocity: true
+    publish_wheel_data: true
+    publish_odom: true
+    publish_tf: true
+    publish_odom_tf: true
+    enable_odom_tf: true
+    
+    # Odometry source
+    open_loop: false                      # Use encoder feedback (false = closed loop)
+    # enable_odom_tf: true                 # Publish odom->base_link transform
+    
+    # Velocity and acceleration limits
+    # linear.x.has_velocity_limits: true
+    # linear.x.max_velocity: 0.5            # m/s
+    # linear.x.min_velocity: -0.5           # m/s
+    # linear.x.has_acceleration_limits: true
+    # linear.x.max_acceleration: 1.0        # m/s²
+    # linear.x.min_acceleration: -1.0       # m/s²
+
+    # angular.z.has_velocity_limits: true
+    # angular.z.max_velocity: 1.0           # rad/s
+    # angular.z.min_velocity: -1.0          # rad/s
+    # angular.z.has_acceleration_limits: true
+    # angular.z.max_acceleration: 2.0       # rad/s²
+    # angular.z.min_acceleration: -2.0      # rad/s²
+    linear.x.has_velocity_limits: true
+    linear.x.max_velocity: 0.22
+
+    linear.x.has_acceleration_limits: true
+    linear.x.max_acceleration: 0.45
+
+    angular.z.has_velocity_limits: true
+    angular.z.max_velocity: 0.38
+    # angular.z.min_velocity: 0.5
+    angular.z.has_acceleration_limits: false
+    angular.z.max_acceleration: 1.5
+    # Command interface settings
+    cmd_vel_timeout: 0.8                  # seconds - stop if no command received
+    # preserve_turning_radius: true         # Better turning accuracy
+    # allow_multiple_cmd_vel_publishers: false
+
+# ============================================================
+# CALIBRATION NOTES
+# ============================================================
+# To calibrate rotation (most important for your issue):
+#
+# 1. Test 360° rotation:
+#    ros2 topic pub --once /diff_drive_controller/cmd_vel_unstamped \
+#      geometry_msgs/msg/Twist "{angular: {z: 1.0}}"
+#    Wait 6.28 seconds, then stop
+#    
+# 2. Measure actual rotation angle
+#
+# 3. If robot over-rotates:
+#    wheel_separation_corrected = 0.202 × (360 / actual_angle)
+#    
+# 4. If robot under-rotates:
+#    wheel_separation_corrected = 0.202 × (360 / actual_angle)
+#
+# Example: Robot only rotates 340°:
+#   New separation = 0.202 × (360/340) = 0.214 m
+#
+# 5. Update the wheel_separation value above and restart controller
+#
+# For straight-line calibration:
+# - If robot travels too far: decrease wheel_radius
+# - If robot travels too short: increase wheel_radius
+# ============================================================

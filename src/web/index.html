@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easeljs@1.0.2/lib/easeljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6.4.9/lib/eventemitter2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1.1.0/build/roslib.min.js"></script>
+    <script src="https://raw.githack.com/RobotWebTools/ros2djs/develop/build/ros2d.js"></script>
+    <script src="https://raw.githack.com/RobotWebTools/nav2djs/develop/build/nav2d.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/ros2d@0.9.0/build/ros2d.js"></script>
+    <style>
+        .joystick-zone { width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%; position: relative; }
+        .blur-bg { backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans">
+
+    <div id="auth-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 blur-bg px-4">
+        <div class="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="inline-flex p-4 bg-blue-600/20 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold">AAIB Bot Control Login</h2>
+                <p class="text-slate-400">Connect to your AAIB system</p>
+            </div>
+            <div class="space-y-5">
+                <input type="text" id="setup-ip" placeholder="Robot IP (e.g. 192.168.1.50)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors">
+                <input type="password" id="setup-key" placeholder="Authentication Key" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors">
+                <button onclick="attemptLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all">ESTABLISH LINK</button>
+                <p id="auth-error" class="text-red-400 text-center hidden text-sm font-medium animate-pulse">Connection failed. Check details.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-ui" class="hidden opacity-0 p-6 transition-opacity duration-700">
+        <div class="flex justify-between items-center mb-8 bg-slate-800/50 p-5 rounded-2xl border border-slate-700 blur-bg">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight">AAIB ROBOT</h1>
+                <p id="ip-display" class="text-xs font-mono text-slate-500"></p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="text-right">
+                    <span class="text-[10px] block text-slate-500 uppercase font-bold">Signal</span>
+                    <span id="conn-status" class="font-mono text-green-400 font-bold">● ONLINE</span>
+                </div>
+                <button onclick="logout()" class="bg-slate-700 p-2 rounded-lg hover:bg-red-900/50 transition">
+                    <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-black rounded-3xl overflow-hidden aspect-video border border-slate-800 shadow-2xl relative group">
+                    <img id="robot-camera" src="" class="w-full h-full object-cover">
+                    <div class="absolute top-6 left-6 bg-red-600/90 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">Live Feed</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 flex flex-col items-center justify-center min-h-[250px]">
+                        <h3 class="text-xs font-bold text-slate-500 mb-6 uppercase tracking-widest">Manual Teleop</h3>
+                        <div id="joystick" class="joystick-zone"></div>
+                    </div>
+                    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 flex flex-col justify-between">
+                        <h3 class="text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">Safety Systems</h3>
+                        <button onclick="sendStop()" class="w-full py-6 bg-red-600 hover:bg-red-700 rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition-all">STOP BOT</button>
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <button class="py-3 bg-slate-700/50 rounded-xl hover:bg-blue-600 transition text-sm font-bold">Aux Lights</button>
+                            <button class="py-3 bg-slate-700/50 rounded-xl hover:bg-blue-600 transition text-sm font-bold">Reset Odom</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-500 mb-6 uppercase tracking-widest">Autonomous Path</h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-slate-500 ml-1">COORD X</label>
+                                <input type="number" id="coord-x" placeholder="0.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-slate-500 ml-1">COORD Y</label>
+                                <input type="number" id="coord-y" placeholder="0.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 outline-none focus:border-blue-500 transition-colors">
+                            </div>
+                        </div>
+                        <button onclick="sendGoal()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg transition-all">DEPLOY TO COORDINATES</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-500 mb-6 uppercase tracking-widest">Telemetry</h3>
+                    <div class="space-y-4 font-mono text-sm">
+                        <div class="flex justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
+                            <span class="text-slate-500 uppercase text-[10px]">Power</span>
+                            <span class="text-green-400">24.2V</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
+                            <span class="text-slate-500 uppercase text-[10px]">Status</span>
+                            <span class="text-blue-400">NOMINAL</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800/40 p-6 rounded-3xl border border-slate-700 lg:col-span-3">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Live Navigation Map</h3>
+                        <span class="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-1 rounded">Click Map to Set Goal</span>
+                    </div>
+                    <div id="map-container" class="bg-slate-900 rounded-xl overflow-hidden border border-slate-700" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 flex flex-col items-center justify-center min-h-[250px]">
+        <h3 class="text-xs font-bold text-slate-500 mb-6 uppercase tracking-widest">Manual Teleop</h3>
+        
+        <!-- Mode toggle -->
+        <div class="flex gap-2 mb-6">
+            <button id="btn-keyboard" onclick="setMode('keyboard')" 
+                class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white transition-all">
+                ⌨ Keyboard
+            </button>
+            <button id="btn-joystick" onclick="setMode('joystick')" 
+                class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-700 text-slate-400 transition-all">
+                ◎ Joystick
+            </button>
+        </div>
+
+        <!-- Keyboard display -->
+        <div id="keyboard-ui" class="flex flex-col items-center gap-2">
+            <div class="flex gap-2">
+                <div id="key-w" class="w-12 h-12 rounded-xl border-2 border-slate-600 bg-slate-700 flex items-center justify-center text-lg font-bold text-slate-300 transition-all">W</div>
+            </div>
+            <div class="flex gap-2">
+                <div id="key-a" class="w-12 h-12 rounded-xl border-2 border-slate-600 bg-slate-700 flex items-center justify-center text-lg font-bold text-slate-300 transition-all">A</div>
+                <div id="key-s" class="w-12 h-12 rounded-xl border-2 border-slate-600 bg-slate-700 flex items-center justify-center text-lg font-bold text-slate-300 transition-all">S</div>
+                <div id="key-d" class="w-12 h-12 rounded-xl border-2 border-slate-600 bg-slate-700 flex items-center justify-center text-lg font-bold text-slate-300 transition-all">D</div>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">Click page first to focus</p>
+        </div>
+
+        <!-- Joystick (hidden by default) -->
+        <div id="joystick-ui" class="hidden">
+            <div id="joystick" class="joystick-zone"></div>
+        </div>
+    </div>
+    <script>
+        function initMap(ip) {
+            console.log("Starting Map Connection to:", ip);
+            const ros = new ROSLIB.Ros({ url: `ws://${ip}:9090` });
+
+            ros.on('connection', () => console.log('Connected to websocket server.'));
+            ros.on('error', (error) => console.log('Error connecting to websocket server: ', error));
+            ros.on('close', () => console.log('Connection to websocket server closed.'));
+
+            const viewer = new ROS2D.Viewer({
+                divID: 'map-container',
+                width: 500,
+                height: 500
+            });
+
+            const gridClient = new ROS2D.OccupancyGridClient({
+                ros: ros,
+                rootObject: viewer.scene,
+                continuous: true
+            });
+
+        
+            
+            // Robot Marker
+            // const robotMarker = new ROS2D.NavigationArrow({
+            //     size: 1.0, // Make it big to see if it appears
+            //     strokeSize: 0.1,
+            //     fillColor: createjs.Graphics.getRGB(255, 0, 0, 1)
+                
+            // });
+             // ✅ Load your PNG as the marker
+            const robotImage = new Image();
+            robotImage.src = `http://${ip}:8000/robot.png`;
+
+            const robotMarker = new createjs.Bitmap(robotImage);
+
+            // Size in pixels on the canvas — adjust to taste
+            const MARKER_SIZE_PX = 1;
+            let markerAdded = false;
+            robotImage.onload = () => {
+                // Scale the bitmap so it's MARKER_SIZE_PX wide regardless of source image size
+                const scale = MARKER_SIZE_PX / robotImage.naturalWidth;
+                robotMarker.scaleX = scale;
+                robotMarker.scaleY = scale;
+
+                // Offset so the image CENTER is the robot position, not the top-left corner
+                robotMarker.regX = robotImage.naturalWidth / 2;
+                robotMarker.regY = robotImage.naturalHeight / 2;
+
+                console.log('Robot image loaded:', robotImage.naturalWidth, 'x', robotImage.naturalHeight);
+            };
+            gridClient.on('change', () => {
+                console.log('Map received:', gridClient.currentGrid.width, 'x', gridClient.currentGrid.height);
+                console.log('Map origin:', gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+                viewer.scaleToDimensions(
+                    gridClient.currentGrid.width,
+                    gridClient.currentGrid.height
+                );
+                viewer.shift(
+                    gridClient.currentGrid.pose.position.x,
+                    gridClient.currentGrid.pose.position.y
+                );
+
+                // ✅ Add marker exactly once, AFTER rootObject is ready
+                if (!markerAdded) {
+                    gridClient.rootObject.addChild(robotMarker);
+                    markerAdded = true;
+                    console.log('Marker added to scene');
+                }
+            });
+            const poseTopic = new ROSLIB.Topic({
+                ros: ros,
+                name: '/amcl_pose', // AMCL provides the accurate localized position
+                messageType: 'geometry_msgs/PoseWithCovarianceStamped'
+            });
+
+            poseTopic.subscribe((message) => {
+                // Note: AMCL messages are nested slightly differently than Odom
+                const pose = message.pose.pose;
+                robotMarker.x = pose.position.x;
+                robotMarker.y = -pose.position.y;
+                
+                const q = pose.orientation;
+                const yaw = Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));
+                robotMarker.rotation = -yaw * (180 / Math.PI);
+                console.log(`Marker pos: x=${robotMarker.x.toFixed(2)}, y=${robotMarker.y.toFixed(2)}`);
+            });
+
+
+            // Odom Subscription
+            // const odomTopic = new ROSLIB.Topic({
+            //     ros: ros,
+            //     name: '/odometry/filtered',
+            //     messageType: 'nav_msgs/Odometry'
+            // });
+
+            // odomTopic.subscribe((message) => {
+            //     robotMarker.x = message.pose.pose.position.x;
+            //     robotMarker.y = -message.pose.pose.position.y;
+            //     const q = message.pose.pose.orientation;
+            //     const yaw = Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));
+            //     robotMarker.rotation = -yaw * (180 / Math.PI);
+            // });
+        }
+        let currentIp = '';
+        let currentKey = '';
+
+        window.onload = () => {
+            const savedIp = localStorage.getItem('bot_ip');
+            const savedKey = localStorage.getItem('bot_key');
+            if(savedIp && savedKey) {
+                document.getElementById('setup-ip').value = savedIp;
+                document.getElementById('setup-key').value = savedKey;
+                attemptLogin();
+            }
+        };
+
+        async function attemptLogin() {
+            currentIp = document.getElementById('setup-ip').value;
+            currentKey = document.getElementById('setup-key').value;
+            const errorBox = document.getElementById('auth-error');
+
+            try {
+                const res = await fetch(`http://${currentIp}:8000/robot/status`, {
+                    headers: { 'X-Auth-Key': currentKey }
+                });
+
+                if(res.ok) {
+                    localStorage.setItem('bot_ip', currentIp);
+                    localStorage.setItem('bot_key', currentKey);
+                    
+                    document.getElementById('auth-overlay').classList.add('hidden');
+                    const mainUi = document.getElementById('main-ui');
+                    mainUi.classList.remove('hidden');
+                    setTimeout(() => mainUi.classList.replace('opacity-0', 'opacity-100'), 50);
+                    
+                    document.getElementById('ip-display').innerText = `GATEWAY: ${currentIp}:8000`;
+                    const streamUrl = `http://${currentIp}:8080/stream?topic=/camera/camera_sensor/image_raw&t=${new Date().getTime()}`;
+                    document.getElementById('robot-camera').src = streamUrl;
+                    initJoystick();
+                    initMap(currentIp);
+                } else { errorBox.classList.remove('hidden'); }
+            } catch (e) { errorBox.classList.remove('hidden'); }
+        }
+
+        // ─── Teleop mode ─────────────────────────────────────────────
+        let teleopMode = 'keyboard';   // 'keyboard' | 'joystick'
+        let joystickManager = null;
+
+        function setMode(mode) {
+            teleopMode = mode;
+
+            document.getElementById('keyboard-ui').classList.toggle('hidden', mode !== 'keyboard');
+            document.getElementById('joystick-ui').classList.toggle('hidden', mode !== 'joystick');
+
+            document.getElementById('btn-keyboard').className =
+                `px-4 py-2 rounded-xl text-xs font-bold transition-all ${mode === 'keyboard' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}`;
+            document.getElementById('btn-joystick').className =
+                `px-4 py-2 rounded-xl text-xs font-bold transition-all ${mode === 'joystick' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}`;
+
+            if (mode === 'joystick' && !joystickManager) {
+                initJoystick();
+            }
+
+            // Stop robot when switching modes
+            postMove(0, 0);
+        }
+
+        // ─── Joystick ─────────────────────────────────────────────────
+        function initJoystick() {
+            joystickManager = nipplejs.create({
+                zone: document.getElementById('joystick'),
+                mode: 'static',
+                position: { left: '50%', top: '50%' },
+                color: '#3b82f6',
+                size: 130
+            });
+            joystickManager.on('move', (evt, data) => postMove(data.vector.y, -data.vector.x));
+            joystickManager.on('end', () => postMove(0, 0));
+        }
+
+        // ─── Keyboard ─────────────────────────────────────────────────
+        // ─── Keyboard ─────────────────────────────────────────────────
+        const LINEAR_SPEED  = 0.4;   // m/s
+        const ANGULAR_SPEED = 0.8;   // rad/s
+        const PUBLISH_HZ    = 10;    // send command every 100ms
+
+        const keysHeld = new Set();
+        let keyboardLoopId = null;
+        let lastLinear = 0;
+        let lastAngular = 0;
+
+        const KEY_VISUALS = { w: 'key-w', a: 'key-a', s: 'key-s', d: 'key-d' };
+
+        function highlightKey(key, active) {
+            const el = document.getElementById(KEY_VISUALS[key]);
+            if (!el) return;
+            if (active) {
+                el.classList.add('border-blue-500', 'bg-blue-600', 'text-white');
+                el.classList.remove('border-slate-600', 'bg-slate-700', 'text-slate-300');
+            } else {
+                el.classList.remove('border-blue-500', 'bg-blue-600', 'text-white');
+                el.classList.add('border-slate-600', 'bg-slate-700', 'text-slate-300');
+            }
+        }
+
+        function computeKeyboardVelocity() {
+            let linear = 0, angular = 0;
+            if (keysHeld.has('w')) linear   =  LINEAR_SPEED;
+            if (keysHeld.has('s')) linear   = -LINEAR_SPEED;
+            if (keysHeld.has('a')) angular  =  ANGULAR_SPEED;
+            if (keysHeld.has('d')) angular  = -ANGULAR_SPEED;
+            return { linear, angular };
+        }
+
+        function startKeyboardLoop() {
+            if (keyboardLoopId) return;   // already running
+            keyboardLoopId = setInterval(() => {
+                const { linear, angular } = computeKeyboardVelocity();
+
+                // Only send if something changed — avoids flooding when idle
+                if (linear !== lastLinear || angular !== lastAngular) {
+                    postMove(linear, angular);
+                    lastLinear  = linear;
+                    lastAngular = angular;
+                }
+            }, 1000 / PUBLISH_HZ);
+        }
+
+        function stopKeyboardLoop() {
+            if (!keyboardLoopId) return;
+            clearInterval(keyboardLoopId);
+            keyboardLoopId = null;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (teleopMode !== 'keyboard') return;
+            const key = e.key.toLowerCase();
+            if (!['w', 'a', 's', 'd'].includes(key)) return;
+            e.preventDefault();   // stops page from scrolling on W/S
+
+            if (keysHeld.has(key)) return;
+            keysHeld.add(key);
+            highlightKey(key, true);
+            startKeyboardLoop();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (teleopMode !== 'keyboard') return;
+            const key = e.key.toLowerCase();
+            if (!['w', 'a', 's', 'd'].includes(key)) return;
+
+            keysHeld.delete(key);
+            highlightKey(key, false);
+
+            if (keysHeld.size === 0) {
+                // No keys held — send zero immediately then stop the loop
+                postMove(0, 0);
+                lastLinear  = 0;
+                lastAngular = 0;
+                stopKeyboardLoop();
+            }
+        });
+
+        // Safety — stop everything if window loses focus
+        window.addEventListener('blur', () => {
+            keysHeld.clear();
+            ['w','a','s','d'].forEach(k => highlightKey(k, false));
+            postMove(0, 0);
+            lastLinear  = 0;
+            lastAngular = 0;
+            stopKeyboardLoop();
+        });
+        async function postMove(linear, angular) {
+            fetch(`http://${currentIp}:8000/robot/move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Auth-Key': currentKey },
+                body: JSON.stringify({ linear, angular })
+            });
+        }
+
+        async function sendGoal() {
+            const x = document.getElementById('coord-x').value || 0;
+            const y = document.getElementById('coord-y').value || 0;
+            fetch(`http://${currentIp}:8000/robot/navigate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Auth-Key': currentKey },
+                body: JSON.stringify({ x: parseFloat(x), y: parseFloat(y) })
+            });
+        }
+
+        function sendStop() { postMove(0, 0); }
+        function logout() { localStorage.clear(); location.reload(); }
+
+        setInterval(async () => {
+            if(!currentIp) return;
+            try {
+                const res = await fetch(`http://${currentIp}:8000/robot/status`, {
+                    headers: { 'X-Auth-Key': currentKey }
+                });
+                const stat = document.getElementById('conn-status');
+                stat.innerText = res.ok ? '● ONLINE' : '● OFFLINE';
+                stat.className = res.ok ? 'font-mono text-green-400 font-bold' : 'font-mono text-red-500 font-bold';
+            } catch(e) {}
+        }, 3000);
+    </script>
+</body>
+</html>

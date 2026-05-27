@@ -1,0 +1,269 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="industry_checkpoints_world">
+
+    <!-- Basic physics and lighting 
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+     -->
+    <!-- ============================= -->
+    <!-- INDUSTRY COVERED AREA (Walls) -->
+    <!-- ============================= -->
+    <!-- A simple rectangular boundary like a covered industry zone -->
+    <model name="industry_boundary">
+      <static>true</static>
+
+      <!-- Wall 1 (North) -->
+      <link name="wall_north">
+        <pose>0 10 1 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- Wall 2 (South) -->
+      <link name="wall_south">
+        <pose>0 -10 1 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- Wall 3 (East) -->
+      <link name="wall_east">
+        <pose>10 0 1 0 0 1.5708</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- Wall 4 (West) -->
+      <link name="wall_west">
+        <pose>-10 0 1 0 0 1.5708</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>20 0.3 2</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- =================================== -->
+    <!-- POINT MARKERS (START/CPs/END) -->
+    <!-- Cylinder marker + Text label -->
+    <!-- =================================== -->
+
+    <!-- START -->
+    <model name="START_point">
+      <static>true</static>
+      <pose>-8 -8 0 0 0 0</pose>
+
+      <link name="start_link">
+        <visual name="marker">
+          <pose>0 0 0.15 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.25</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+          </material>
+        </visual>
+
+        <visual name="label">
+          <pose>0 0 1.2 0 0 0</pose>
+          <geometry>
+            <text>
+              <text>START</text>
+              <size>0.5</size>
+            </text>
+          </geometry>
+          <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- CHECKPOINT 1 -->
+    <model name="CP1_point">
+      <static>true</static>
+      <pose>-2 -5 0 0 0 0</pose>
+
+      <link name="cp1_link">
+        <visual name="marker">
+          <pose>0 0 0.15 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.25</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1 1 0 1</ambient>
+            <diffuse>1 1 0 1</diffuse>
+          </material>
+        </visual>
+
+        <visual name="label">
+          <pose>0 0 1.2 0 0 0</pose>
+          <geometry>
+            <text>
+              <text>CHECKPOINT 1</text>
+              <size>0.45</size>
+            </text>
+          </geometry>
+          <material>
+            <ambient>1 1 0 1</ambient>
+            <diffuse>1 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- CHECKPOINT 2 -->
+    <model name="CP2_point">
+      <static>true</static>
+      <pose>3 0 0 0 0 0</pose>
+
+      <link name="cp2_link">
+        <visual name="marker">
+          <pose>0 0 0.15 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.25</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1 0.6 0 1</ambient>
+            <diffuse>1 0.6 0 1</diffuse>
+          </material>
+        </visual>
+
+        <visual name="label">
+          <pose>0 0 1.2 0 0 0</pose>
+          <geometry>
+            <text>
+              <text>CHECKPOINT 2</text>
+              <size>0.45</size>
+            </text>
+          </geometry>
+          <material>
+            <ambient>1 0.6 0 1</ambient>
+            <diffuse>1 0.6 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- CHECKPOINT 3 -->
+    <model name="CP3_point">
+      <static>true</static>
+      <pose>-1 6 0 0 0 0</pose>
+
+      <link name="cp3_link">
+        <visual name="marker">
+          <pose>0 0 0.15 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.25</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0 0.7 1 1</ambient>
+            <diffuse>0 0.7 1 1</diffuse>
+          </material>
+        </visual>
+
+        <visual name="label">
+          <pose>0 0 1.2 0 0 0</pose>
+          <geometry>
+            <text>
+              <text>CHECKPOINT 3</text>
+              <size>0.45</size>
+            </text>
+          </geometry>
+          <material>
+            <ambient>0 0.7 1 1</ambient>
+            <diffuse>0 0.7 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- END -->
+    <model name="END_point">
+      <static>true</static>
+      <pose>8 8 0 0 0 0</pose>
+
+      <link name="end_link">
+        <visual name="marker">
+          <pose>0 0 0.15 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.25</radius><length>0.3</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+
+        <visual name="label">
+          <pose>0 0 1.2 0 0 0</pose>
+          <geometry>
+            <text>
+              <text>END</text>
+              <size>0.5</size>
+            </text>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

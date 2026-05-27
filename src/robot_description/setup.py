@@ -16,6 +16,10 @@ setup(
         # If you also have a 'urdf' directory for models, add this:
         (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.urdf'))),
         (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.xacro'))),
+         # If you have a 'worlds' directory for Gazebo world files, add this:   
+         (os.path.join('share', package_name, 'map'), glob(os.path.join('map', '*.yaml'))),
+        (os.path.join('share', package_name, 'worlds'), glob(os.path.join('worlds', '*.world'))),
+        (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.xacro'))),
         (os.path.join('share', package_name, 'meshes'), glob(os.path.join('meshes', '*.stl'))),
         (os.path.join('share', package_name, 'meshes'), glob(os.path.join('meshes', '*.dae'))), # If you're also using .dae
         # ... (inside data_files)
