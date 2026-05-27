@@ -1,98 +1,56 @@
-AAIB: Autonomous Adaptive Inspection Bot
+# Autonomous Adaptive Inspection Bot (AAIB) 🚀
 
-A Cloud-Integrated ROS 2 Framework for Global Industrial Monitoring
+The **Autonomous Adaptive Inspection Bot (AAIB)** is a globally deployable, cloud-connected robotic platform designed for surveying hazardous and confined industrial spaces. Built on **ROS 2 Humble** and simulated in **Gazebo Classic**, this 4WD skid-steer bot leverages a hybrid control architecture, allowing for seamless switching between autonomous map-based navigation and global manual teleoperation.
 
-📌 Overview
+## 🌟 Key Features
 
-The Autonomous Adaptive Inspection Bot (AAIB) enables global control of ROS 2 robots by replacing local connections with a Cloud Mission State Register (MSR) on Firebase Firestore. This architecture allows secure, real-time command from any web device worldwide, overcoming traditional network limitations for industrial monitoring.
+* **Cloud Mission State Register (MSR):** Utilizes Firebase Firestore as a thread-safe, ultra-low-latency command bridge between the web and the robot, bypassing traditional WebSocket limitations.
+* **Global Teleoperation via VPN:** Integrates **Tailscale VPN** to establish a secure, encrypted mesh network. Remote operators can command the bot and view telemetry over the internet, completely bypassing corporate firewalls.
+* **Hybrid Control Logic:** * *Autonomous Mode:* Leverages the **Nav2 stack** for absolute localization, generating 2D occupancy grids via Lidar and tracking the robot directly on the map.
+    * *Adaptive Mode:* Instantaneous manual override capability via a web-connected dashboard joystick.
+* **Optimized Hardware Actuation:** Control directives are translated and published directly to the `/diff_drive_controller/cmd_vel_unstamped` topic, bypassing TF-tree computational bottlenecks for instant motor response.
 
-This project successfully implements a Hybrid Control Architecture, allowing seamless transitions between Autonomous mission navigation and Adaptive manual override. This dual-mode capability ensures that while the bot can perform routine coordinate-based patrols independently, human operators can instantly intervene via a virtual joystick when anomalies are detected, ensuring both efficiency and safety in remote inspection tasks.
+## 🛠️ Tech Stack
 
-🚀 Key Features
+* **Robotics Middleware:** ROS 2 Humble
+* **Simulation:** Gazebo Classic
+* **Navigation & Mapping:** Nav2 Stack, SLAM
+* **Cloud & Database:** Firebase Firestore, Python (`firebase-admin` SDK)
+* **Networking:** Tailscale VPN, No-IP (Dynamic DNS)
+* **Web Dashboard:** HTML/CSS/JavaScript
 
-Cloud-Native Control: Replaces transient WebSockets with a persistent Firebase Firestore MSR, allowing for asynchronous command deployment and global reach.
+## ⚙️ Prerequisites
 
-Low Latency: Achieves sub-100ms end-to-end latency from Web UI to Gazebo simulation.
+Before cloning the repository, ensure your system (e.g., Ubuntu 22.04) has the following installed:
+* [ROS 2 Humble](https://docs.ros.org/en/humble/Installation.html)
+* Gazebo Classic
+* Python 3.10+
+* `ros2_control` and `ros2_controllers` packages
+* [Tailscale](https://tailscale.com/) (installed and authenticated on both the robot/host and the client device)
 
-Hybrid Logic: Seamless switching between P-Control autonomous driving and direct manual teleoperation.
+## 🚀 Installation & Setup
 
-Real-time Telemetry: Live feedback of Robot Pose ($X, Y, Yaw$) and system status streamed back to the operator dashboard.
-
-Industrial Kinematics: 4WD Skid-Steer model configured with ros2_control and validated in Gazebo.
-
-🛠️ Tech Stack
-
-Robotics: ROS 2 (Dashing/Foxy/Humble), URDF/Xacro, Gazebo, ros2_control.
-
-Cloud: Firebase Admin SDK (Python), Cloud Firestore.
-
-Web: React/HTML5, Tailwind CSS, Firebase JS SDK.
-
-Language: Python 3.x, JavaScript.
-
-🏗️ Architecture
-
-The system is divided into three distinct layers:
-
-Operator Layer (Web UI): The dashboard where missions are defined and manual commands are issued.
-
-Cloud Middleware (MSR): The persistent database holding the "Single Source of Truth."
-
-Robotics Layer (ROS 2 Bridge): A custom Python node that interprets cloud state into geometry_msgs/Twist commands.
-
-🔧 Installation & Setup
-
-1. Clone the Repository
-
-mkdir -p ~/rover_ws/src
-cd ~/rover_ws/src
-git clone [https://github.com/your-username/aaib_robot.git](https://github.com/your-username/aaib_robot.git)
-
-
-
-
-2. Install Dependencies
-
-pip install firebase-admin
-sudo apt install ros-$ROS_DISTRO-ros2-control ros-$ROS_DISTRO-ros2-controllers ros-$ROS_DISTRO-gazebo-ros2-control
-
-
-
-
-3. Firebase Configuration
-
-Place your serviceAccountKey.json in the my_rover/config/ directory.
-
-Update the SERVICE_ACCOUNT_PATH in firestore_bridge_node.py.
-
-4. Build and Launch
-
-cd ~/rover_ws
-colcon build --packages-select my_rover
+1. **Clone the repository into your ROS 2 workspace:**
+   ```bash
+   mkdir -p ~/ros2_ws/src
+   cd ~/ros2_ws/src
+   git clone [https://github.com/yagyesh-Sahu-op/Autonomous-Adaptive-Inspection-Bot-AAIB-](https://github.com/yagyesh-Sahu-op/Autonomous-Adaptive-Inspection-Bot-AAIB-)
+   
+   
+   
+source /opt/ros/humble/setup.bash
 source install/setup.bash
-ros2 launch my_rover my_rover.launch.py
+ros2 launch robot_description spawn_web_robot_in_gazebo.launch.py
+ros2 launch robot_description slam.launch.py
+ros2 launch robot_description nav2.launch.py
+rviz2 -d /opt/ros/humble/share/nav2_bringup/rviz/nav2_default_view.rviz
 
 
 
-
-📈 Future Roadmap (Phase 2)
-
-$$$$
-
- Advanced Perception: Integrating ML models (CNNs) for industrial fault detection (rust, cracks, safety violations).
-
-$$$$
-
- Full Navigation: Integration of the ROS 2 Navigation Stack (Nav2) for SLAM and obstacle avoidance.
-
-$$$$
-
- Multi-User Security: Firebase Authentication and control arbitration tokens for team-based inspection.
-
-👤 Developer's Note
-
-This project is a solo pursuit of excellence in robotics and cloud integration. It stands as a refutation of the idea that a single individual cannot tackle large-scale engineering challenges. Driven by a passion for engineering principles—precision, dedication, and harmony—AAIB is the first milestone toward a future of intelligent, global automation.
-
-"Ganbatte!" (Do your best!)
-
-© 2025 Yagyesh Sahu
+#####packages#####
+robot-localization
+twist-mux
+slam-toolbox
+navigation2
+nav2-bringup
+pointcloud-to-laserscan
