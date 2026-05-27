@@ -35,7 +35,9 @@ Before cloning the repository, ensure your system (e.g., Ubuntu 22.04) has the f
    mkdir -p ~/ros2_ws/src
    cd ~/ros2_ws/src
    git clone [https://github.com/yagyesh-Sahu-op/Autonomous-Adaptive-Inspection-Bot-AAIB-](https://github.com/yagyesh-Sahu-op/Autonomous-Adaptive-Inspection-Bot-AAIB-)
-   
+
+
+![Simulation image](./Screenshot.png)
    
    
 source /opt/ros/humble/setup.bash
